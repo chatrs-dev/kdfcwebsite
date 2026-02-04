@@ -1,0 +1,187 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ELITE EFB | eFootball Pro Club</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Kanit:wght@400;700;900&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
+
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: { efbBlue: '#001e5a', efbYellow: '#e4f134', efbPink: '#e9005c' },
+                    fontFamily: { kanit: ['Kanit', 'sans-serif'] }
+                }
+            }
+        }
+    </script>
+    <style>
+        body { background-color: #000b21; color: white; font-family: 'Kanit', sans-serif; overflow-x: hidden; }
+        #home.active-page { 
+            background: linear-gradient(to bottom, rgba(0,30,90,0.8), #000b21), url('https://images.unsplash.com/photo-1508098682722-e99c43a406b2?auto=format&fit=crop&q=80&w=1500'); 
+            background-size: cover; background-position: center; display: flex; 
+        }
+        .page { display: none; min-height: 100vh; }
+        .active-page { display: block; animation: fadeIn 0.5s ease; }
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+        .member-card:hover { border-color: #e4f134; transform: scale(1.02); transition: 0.3s; }
+    </style>
+</head>
+<body>
+
+    <!-- RESPONSIVE NAVBAR -->
+    <nav class="fixed w-full z-50 bg-efbBlue border-b-4 border-efbYellow px-4 md:px-6 py-3 flex justify-between items-center shadow-2xl">
+        <div class="flex items-center gap-3 cursor-pointer" onclick="showPage('home')">
+            <div class="bg-white p-1 rounded-full w-10 h-10 flex items-center justify-center shadow-lg">
+                <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/b/bb/EFootball_logo.svg/1200px-EFootball_logo.svg.png" class="w-8">
+            </div>
+            <span class="text-xl md:text-2xl font-black italic tracking-tighter uppercase">KD<span class="text-efbYellow">FC</span></span>
+        </div>
+
+        <!-- Desktop Menu -->
+        <div class="hidden md:flex gap-8 font-bold uppercase text-xs tracking-widest">
+            <button onclick="showPage('home')" class="hover:text-efbYellow transition">Home</button>
+            <button onclick="showPage('membersPage')" class="hover:text-efbYellow transition">Squad</button>
+            <button onclick="showPage('tournamentsPage')" class="hover:text-efbYellow transition">Tournaments</button>
+            <button onclick="showPage('joinPage')" class="bg-efbYellow text-efbBlue px-5 py-2 rounded-full italic hover:bg-white transition">Join Club</button>
+        </div>
+
+        <!-- Mobile Menu Toggle -->
+        <button id="menuBtn" class="md:hidden text-2xl text-white">
+            <i class="fas fa-bars"></i>
+        </button>
+
+        <!-- Facebook Social Link (Desktop only) -->
+        <a href="https://facebook.com" class="hidden md:block text-2xl text-white hover:text-blue-400 transition"><i class="fab fa-facebook"></i></a>
+    </nav>
+
+    <!-- MOBILE OVERLAY MENU -->
+    <div id="mobileMenu" class="fixed inset-0 bg-efbBlue z-[100] hidden flex-col items-center justify-center gap-8 text-center">
+        <button id="closeMenu" class="absolute top-6 right-6 text-3xl">&times;</button>
+        <button onclick="showPage('home'); closeMobile()" class="text-2xl font-black italic uppercase">Home</button>
+        <button onclick="showPage('membersPage'); closeMobile()" class="text-2xl font-black italic uppercase">Squad</button>
+        <button onclick="showPage('tournamentsPage'); closeMobile()" class="text-2xl font-black italic uppercase">Tournaments</button>
+        <button onclick="showPage('joinPage'); closeMobile()" class="bg-efbYellow text-efbBlue px-8 py-3 rounded-full font-black italic uppercase">Join Club</button>
+    </div>
+
+    <!-- HOME PAGE -->
+    <section id="home" class="page active-page pt-20 flex-col items-center justify-center text-center px-6">
+        <h1 class="text-5xl md:text-9xl font-black italic mb-4 uppercase leading-tight">NORTHERN DYNASTY.<br><span class="text-efbYellow">WILL DOMINATE THE PITCH.
+</span></h1>
+        <p class="text-lg md:text-xl text-zinc-300 mb-10 max-w-2xl mx-auto">Join the movement. Witness the rise.</p>
+        <button onclick="showPage('joinPage')" class="bg-efbPink text-white px-10 py-4 md:px-12 md:py-5 rounded-full font-black text-lg md:text-xl hover:scale-110 transition shadow-xl uppercase italic tracking-tighter">Apply for Trials</button>
+    </section>
+
+    <!-- SQUAD PAGE -->
+    <section id="membersPage" class="page pt-32 px-4 md:px-6 max-w-7xl mx-auto pb-20">
+        <h2 class="text-4xl md:text-5xl font-black italic mb-12 border-l-8 border-efbYellow pl-6 uppercase tracking-tighter">Members</h2>
+        <div id="memberGrid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 md:gap-8"></div>
+    </section>
+
+    <!-- TOURNAMENTS PAGE -->
+    <section id="tournamentsPage" class="page pt-32 px-4 md:px-6 max-w-7xl mx-auto pb-20">
+        <h2 class="text-4xl md:text-5xl font-black italic mb-10 text-center uppercase">Live <span class="text-efbYellow">Events</span></h2>
+        <div id="liveTours" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 md:gap-8 mb-20"></div>
+        <h2 class="text-2xl md:text-3xl font-black italic mb-10 text-center uppercase text-zinc-500">Tournament History</h2>
+        <div id="oldTours" class="grid grid-cols-2 md:grid-cols-4 gap-4 md:gap-6 opacity-60"></div>
+    </section>
+
+    <!-- JOIN US PAGE -->
+    <section id="joinPage" class="page pt-32 px-4 md:px-6 pb-20 max-w-2xl mx-auto">
+        <div class="bg-efbBlue p-6 md:p-10 rounded-3xl border border-white/10 shadow-2xl">
+            <h2 class="text-2xl md:text-3xl font-black italic mb-6 uppercase text-efbYellow">Trial Application</h2>
+            <form id="applyForm" class="space-y-4 text-sm md:text-base">
+                <input type="text" id="aName" placeholder="Full Name" required class="w-full bg-[#000b21] p-4 rounded-xl border border-white/5 outline-none focus:border-efbYellow">
+                <input type="text" id="aId" placeholder="eFootball Owner ID" required class="w-full bg-[#000b21] p-4 rounded-xl border border-white/5 outline-none focus:border-efbYellow">
+                <input type="tel" id="aPhone" placeholder="WhatsApp Number" required class="w-full bg-[#000b21] p-4 rounded-xl border border-white/5 outline-none focus:border-efbYellow">
+                <input type="text" id="aDevice" placeholder="Device (e.g. iPhone 15 Pro)" required class="w-full bg-[#000b21] p-4 rounded-xl border border-white/5 outline-none focus:border-efbYellow">
+                <input type="url" id="aPhoto" placeholder="Your Photo URL" class="w-full bg-[#000b21] p-4 rounded-xl border border-white/5 outline-none focus:border-efbYellow">
+                <input type="url" id="aFb" placeholder="Facebook Link" class="w-full bg-[#000b21] p-4 rounded-xl border border-white/5 outline-none focus:border-efbYellow">
+                <button type="submit" id="submitBtn" class="w-full bg-efbYellow text-efbBlue font-black py-4 rounded-xl uppercase hover:bg-white transition shadow-lg shadow-yellow-500/20">Submit Trial Info</button>
+            </form>
+        </div>
+    </section>
+
+    <!-- MODAL -->
+    <div id="pModal" class="fixed inset-0 bg-black/95 z-[150] hidden flex items-center justify-center p-6">
+        <div id="pContent" class="bg-efbBlue max-w-md w-full rounded-3xl p-8 relative border-t-8 border-efbYellow text-center shadow-2xl"></div>
+    </div>
+    
+    <div id="successPop" class="fixed inset-0 bg-black/90 z-[160] hidden flex items-center justify-center p-6 text-center">
+        <div class="bg-white text-efbBlue p-10 rounded-3xl max-w-xs"><i class="fas fa-check-circle text-6xl text-green-500 mb-4"></i><h3 class="text-2xl font-black uppercase">Success</h3><p class="font-bold text-zinc-500 text-xs mt-2 uppercase">Admin will send you a trial link shortly.</p><button onclick="location.reload()" class="mt-6 bg-efbBlue text-white px-8 py-2 rounded-full font-bold uppercase text-xs">Close</button></div>
+    </div>
+
+    <script>
+        const firebaseConfig = {
+            apiKey: "AIzaSyBisWRiklb1hCkOwhRgJ4ev2qQ79E02Me4",
+            authDomain: "chatwrk-7f455.firebaseapp.com",
+            databaseURL: "https://chatwrk-7f455-default-rtdb.asia-southeast1.firebasedatabase.app",
+            projectId: "chatwrk-7f455",
+            storageBucket: "chatwrk-7f455.firebasestorage.app",
+            messagingSenderId: "257499605076",
+            appId: "1:257499605076:web:61d955cae2c0356bca65c1"
+        };
+        firebase.initializeApp(firebaseConfig);
+        const db = firebase.database();
+
+        // Responsive Menu Toggle
+        const menuBtn = document.getElementById('menuBtn');
+        const mobileMenu = document.getElementById('mobileMenu');
+        const closeMenu = document.getElementById('closeMenu');
+
+        menuBtn.onclick = () => mobileMenu.classList.remove('hidden');
+        closeMenu.onclick = () => mobileMenu.classList.add('hidden');
+        function closeMobile() { mobileMenu.classList.add('hidden'); }
+
+        function showPage(id) {
+            document.querySelectorAll('.page').forEach(p => p.classList.remove('active-page'));
+            document.getElementById(id).classList.add('active-page');
+            window.scrollTo(0,0);
+        }
+
+        db.ref('members').on('value', s => {
+            const data = s.val() || {};
+            document.getElementById('memberGrid').innerHTML = Object.keys(data).map(k => {
+                const m = data[k];
+                return `<div onclick='openP(${JSON.stringify(m)})' class="member-card cursor-pointer bg-efbBlue border-b-4 border-white/5 rounded-2xl overflow-hidden"><img src="${m.img}" class="w-full h-64 md:h-72 object-cover"><div class="p-5 text-center italic"><h3 class="font-black text-lg md:text-xl uppercase tracking-tighter">${m.name}</h3><p class="text-efbYellow text-[10px] md:text-xs font-black uppercase">${m.role}</p></div></div>`;
+            }).join('');
+        });
+
+        db.ref('tournaments').on('value', s => {
+            const data = s.val() || {};
+            let live = '', old = '';
+            Object.keys(data).forEach(k => {
+                const t = data[k];
+                const card = `<div class="bg-efbBlue rounded-3xl overflow-hidden border border-white/5 group shadow-xl"><img src="${t.img}" class="w-full h-40 md:h-48 object-cover group-hover:scale-105 transition duration-500"><div class="p-4 md:p-6"><h3 class="text-xl md:text-2xl font-black italic uppercase">${t.name}</h3><p class="text-efbYellow font-black mb-4 uppercase text-[10px] md:text-xs">Prize: ${t.prize}</p><a href="${t.link}" target="_blank" class="block text-center bg-white text-efbBlue py-3 rounded-xl font-black uppercase hover:bg-efbYellow transition text-xs">Event Details</a></div></div>`;
+                t.status === 'History' ? old += card : live += card;
+            });
+            document.getElementById('liveTours').innerHTML = live;
+            document.getElementById('oldTours').innerHTML = old;
+        });
+
+        function openP(m) {
+            document.getElementById('pContent').innerHTML = `<button onclick="document.getElementById('pModal').classList.add('hidden')" class="absolute top-4 right-4 text-3xl">&times;</button><img src="${m.img}" class="w-24 h-24 md:w-32 md:h-32 rounded-full border-4 border-efbYellow mx-auto mb-4 object-cover shadow-2xl"><h2 class="text-2xl md:text-3xl font-black italic uppercase">${m.name}</h2><p class="text-efbYellow font-bold mb-6 uppercase text-xs">${m.role}</p><div class="text-left bg-black/40 p-4 md:p-5 rounded-2xl space-y-1"><p class="text-[9px] md:text-[10px] font-black uppercase text-zinc-500 tracking-widest">Device: <span class="text-white">${m.device}</span></p><p class="text-[9px] md:text-[10px] font-black uppercase text-zinc-500 tracking-widest">Owner ID: <span class="text-white">${m.gameId}</span></p></div><a href="${m.fb}" target="_blank" class="block w-full bg-[#1877F2] py-4 mt-6 rounded-2xl font-black uppercase tracking-widest hover:brightness-110 shadow-lg text-sm">View FB Profile</a>`;
+            document.getElementById('pModal').classList.remove('hidden');
+        }
+
+        document.getElementById('applyForm').onsubmit = (e) => {
+            e.preventDefault();
+            db.ref('applications').push({
+                name: document.getElementById('aName').value,
+                gameId: document.getElementById('aId').value,
+                phone: document.getElementById('aPhone').value,
+                device: document.getElementById('aDevice').value,
+                photo: document.getElementById('aPhoto').value,
+                fb: document.getElementById('aFb').value,
+                date: new Date().toLocaleString()
+            }).then(() => { document.getElementById('successPop').classList.remove('hidden'); });
+        };
+    </script>
+</body>
+</html>

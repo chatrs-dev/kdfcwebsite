@@ -1,0 +1,200 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Elite Admin | Restricted Access</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Kanit:wght@400;700;900&family=Inter:wght@400;600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
+
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: { efbBlue: '#001e5a', efbYellow: '#e4f134', darkCard: '#0a0f1d' },
+                    fontFamily: { kanit: ['Kanit', 'sans-serif'], inter: ['Inter', 'sans-serif'] }
+                }
+            }
+        }
+    </script>
+    <style>
+        body { background: #000511; color: white; font-family: 'Inter', sans-serif; overflow-x: hidden; }
+        .glass { background: rgba(10, 15, 29, 0.7); backdrop-filter: blur(10px); border: 1px solid rgba(255,255,255,0.05); }
+        input, select { background: #000b21 !important; border: 1px solid #1e293b !important; color: white !important; }
+        .tab-btn.active { background: #e4f134; color: #001e5a; }
+        .tab-content { display: none; }
+        .tab-content.active { display: block; }
+    </style>
+</head>
+<body class="min-h-screen">
+
+    <!-- LOGIN -->
+    <div id="loginSection" class="h-screen flex items-center justify-center bg-[#000511]">
+        <div class="text-center bg-darkCard p-12 rounded-3xl border border-white/5 shadow-2xl max-w-sm w-full">
+            <div class="w-20 h-20 bg-efbYellow rounded-full flex items-center justify-center mx-auto mb-6 text-efbBlue shadow-xl"><i class="fas fa-fingerprint text-3xl"></i></div>
+            <h1 class="font-kanit text-3xl font-black italic mb-2 uppercase tracking-tighter">Admin <span class="text-efbYellow">Auth</span></h1>
+            <div id="loginError" class="hidden mb-6 p-3 bg-red-500/10 border border-red-500 rounded-xl text-red-500 text-[10px] font-bold uppercase tracking-widest">Access Denied: Restricted to Owner.</div>
+            <button onclick="login()" class="w-full bg-white text-black py-4 rounded-xl font-black uppercase text-xs flex items-center justify-center gap-4 hover:scale-105 transition shadow-lg"><img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/action/google.svg" class="w-5"> Login as Riya Roy</button>
+        </div>
+    </div>
+
+    <!-- DASHBOARD -->
+    <div id="adminPanel" class="hidden max-w-7xl mx-auto p-6 lg:p-10">
+        <header class="flex justify-between items-center mb-12 border-b border-white/5 pb-6">
+            <div class="flex items-center gap-4"><img id="adminPhoto" src="" class="w-12 h-12 rounded-full border-2 border-efbYellow"><div><h2 class="font-kanit font-black italic text-2xl uppercase tracking-tighter leading-none">Command Center</h2><p id="adminName" class="text-[10px] font-bold text-zinc-500 uppercase mt-1"></p></div></div>
+            <button onclick="logout()" class="text-red-500 font-black uppercase text-[10px] border border-red-500/20 px-4 py-2 rounded-full hover:bg-red-500 hover:text-white transition">Logout</button>
+        </header>
+
+        <div class="flex gap-2 mb-10 overflow-x-auto pb-2">
+            <button onclick="switchTab('squad')" id="btn-squad" class="tab-btn active px-8 py-3 rounded-full font-black text-[10px] uppercase tracking-widest transition">Squad</button>
+            <button onclick="switchTab('tours')" id="btn-tours" class="tab-btn px-8 py-3 rounded-full font-black text-[10px] uppercase tracking-widest transition">Events</button>
+            <button onclick="switchTab('apps')" id="btn-apps" class="tab-btn px-8 py-3 rounded-full font-black text-[10px] uppercase tracking-widest transition">Applications</button>
+        </div>
+
+        <section id="tab-squad" class="tab-content active">
+            <div class="grid lg:grid-cols-12 gap-10">
+                <div class="lg:col-span-4"><div class="glass p-8 rounded-3xl sticky top-10"><h3 id="mTitle" class="text-xl font-black italic uppercase mb-6 text-efbYellow">Add Player</h3><form id="mForm" class="space-y-4"><input type="hidden" id="editM_id"><input id="mName" type="text" placeholder="Name" required class="w-full p-4 rounded-xl text-sm"><input id="mRole" type="text" placeholder="Role" required class="w-full p-4 rounded-xl text-sm"><input id="mId" type="text" placeholder="Owner ID" required class="w-full p-4 rounded-xl text-sm"><input id="mDev" type="text" placeholder="Device" required class="w-full p-4 rounded-xl text-sm"><input id="mImg" type="url" placeholder="Photo URL" required class="w-full p-4 rounded-xl text-sm"><input id="mFb" type="url" placeholder="FB Link" required class="w-full p-4 rounded-xl text-sm"><button class="w-full bg-efbYellow text-efbBlue font-black py-4 rounded-xl uppercase">Update Squad</button><button type="button" onclick="resetM()" id="mCancel" class="hidden w-full text-zinc-500 text-[10px] font-bold uppercase mt-2">Cancel</button></form></div></div>
+                <div class="lg:col-span-8"><div id="mList" class="grid md:grid-cols-2 gap-4"></div></div>
+            </div>
+        </section>
+
+        <section id="tab-tours" class="tab-content">
+            <div class="grid lg:grid-cols-12 gap-10">
+                <div class="lg:col-span-4"><div class="glass p-8 rounded-3xl sticky top-10"><h3 id="tTitle" class="text-xl font-black italic uppercase mb-6 text-pink-500">Post Event</h3><form id="tForm" class="space-y-4"><input type="hidden" id="editT_id"><input id="tName" type="text" placeholder="Title" required class="w-full p-4 rounded-xl text-sm"><input id="tPrize" type="text" placeholder="Prize" required class="w-full p-4 rounded-xl text-sm"><select id="tStatus" class="w-full p-4 rounded-xl text-sm font-bold"><option value="Live">LIVE / UPCOMING</option><option value="History">OLD / HISTORY</option></select><input id="tImg" type="url" placeholder="Poster URL" required class="w-full p-4 rounded-xl text-sm"><input id="tLink" type="url" placeholder="Link" required class="w-full p-4 rounded-xl text-sm"><button class="w-full bg-pink-600 text-white font-black py-4 rounded-xl uppercase">Post Event</button><button type="button" onclick="resetT()" id="tCancel" class="hidden w-full text-zinc-500 text-[10px] font-bold uppercase mt-2">Cancel</button></form></div></div>
+                <div class="lg:col-span-8"><div id="tList" class="space-y-4"></div></div>
+            </div>
+        </section>
+
+        <section id="tab-apps" class="tab-content">
+            <div id="appList" class="grid md:grid-cols-2 lg:grid-cols-3 gap-6"></div>
+        </section>
+    </div>
+
+    <script>
+        const firebaseConfig = {
+            apiKey: "AIzaSyBisWRiklb1hCkOwhRgJ4ev2qQ79E02Me4",
+            authDomain: "chatwrk-7f455.firebaseapp.com",
+            databaseURL: "https://chatwrk-7f455-default-rtdb.asia-southeast1.firebasedatabase.app",
+            projectId: "chatwrk-7f455",
+            storageBucket: "chatwrk-7f455.firebasestorage.app",
+            messagingSenderId: "257499605076",
+            appId: "1:257499605076:web:61d955cae2c0356bca65c1"
+        };
+        firebase.initializeApp(firebaseConfig);
+        const auth = firebase.auth();
+        const db = firebase.database();
+
+        const AUTHORIZED_EMAIL = "riyaroy51825@gmail.com";
+        function login() { auth.signInWithPopup(new firebase.auth.GoogleAuthProvider()); }
+        function logout() { auth.signOut().then(() => location.reload()); }
+
+        auth.onAuthStateChanged(user => {
+            if (user) {
+                if (user.email === AUTHORIZED_EMAIL) {
+                    document.getElementById('loginSection').style.display = 'none';
+                    document.getElementById('adminPanel').classList.remove('hidden');
+                    document.getElementById('adminName').innerText = user.displayName;
+                    document.getElementById('adminPhoto').src = user.photoURL;
+                    loadAdmin();
+                } else {
+                    document.getElementById('loginError').classList.remove('hidden');
+                    setTimeout(() => auth.signOut(), 2000);
+                }
+            }
+        });
+
+        function switchTab(id) {
+            document.querySelectorAll('.tab-content, .tab-btn').forEach(el => el.classList.remove('active'));
+            document.getElementById('tab-'+id).classList.add('active');
+            document.getElementById('btn-'+id).classList.add('active');
+        }
+
+        function loadAdmin() {
+            db.ref('members').on('value', s => {
+                const data = s.val() || {};
+                document.getElementById('mList').innerHTML = Object.keys(data).map(k => `
+                    <div class="glass p-5 rounded-2xl flex items-center justify-between group">
+                        <div class="flex items-center gap-4"><img src="${data[k].img}" class="w-10 h-10 rounded-full object-cover"><div><h4 class="font-bold text-sm uppercase">${data[k].name}</h4><p class="text-[10px] text-efbYellow">${data[k].role}</p></div></div>
+                        <div class="flex gap-4 opacity-0 group-hover:opacity-100 transition"><button onclick='editM(${JSON.stringify(data[k])})' class="text-blue-400 text-[10px] font-black">EDIT</button><button onclick="db.ref('members/${k}').remove()" class="text-red-500 text-[10px] font-black">DEL</button></div>
+                    </div>
+                `).join('');
+            });
+
+            db.ref('tournaments').on('value', s => {
+                const data = s.val() || {};
+                document.getElementById('tList').innerHTML = Object.keys(data).map(k => `
+                    <div class="glass p-5 rounded-2xl flex items-center justify-between border-l-4 ${data[k].status === 'Live' ? 'border-pink-500' : 'border-zinc-700'}">
+                        <div><h4 class="font-bold uppercase text-sm italic">${data[k].name}</h4><p class="text-[10px] font-bold text-zinc-500">${data[k].status} • ${data[k].prize}</p></div>
+                        <div class="flex gap-4"><button onclick='editT(${JSON.stringify(data[k])})' class="text-blue-400 text-[10px] font-black">EDIT</button><button onclick="db.ref('tournaments/${k}').remove()" class="text-red-500 text-[10px] font-black">WIPE</button></div>
+                    </div>
+                `).join('');
+            });
+
+            db.ref('applications').on('value', s => {
+                const data = s.val() || {};
+                document.getElementById('appList').innerHTML = Object.keys(data).map(k => {
+                    const a = data[k];
+                    return `<div class="glass p-6 rounded-3xl border border-white/5">
+                        <h4 class="font-kanit font-black text-xl italic uppercase mb-1">${a.name}</h4>
+                        <p class="text-[10px] font-bold text-zinc-500 mb-4">${a.date}</p>
+                        <div class="space-y-1 mb-6 text-[10px] font-bold uppercase text-zinc-400">
+                            <p>ID: <span class="text-white">${a.gameId}</span></p>
+                            <p>Device: <span class="text-white">${a.device}</span></p>
+                        </div>
+                        <div class="flex flex-col gap-2">
+                            <div class="flex gap-2">
+                                <a href="https://wa.me/${a.phone}" target="_blank" class="flex-1 bg-green-600 text-white text-center py-3 rounded-xl text-[10px] font-black uppercase">WhatsApp</a>
+                                <a href="${a.fb}" target="_blank" class="flex-1 bg-blue-600 text-white text-center py-3 rounded-xl text-[10px] font-black uppercase">Facebook</a>
+                            </div>
+                            <button onclick="db.ref('applications/${k}').remove()" class="w-full bg-zinc-800 text-white py-3 rounded-xl hover:bg-red-500 transition text-[10px] font-black uppercase">Remove Application</button>
+                        </div>
+                    </div>`;
+                }).join('');
+            });
+        }
+
+        // RESET LOGIC
+        function editM(m) {
+            document.getElementById('mTitle').innerText = "Edit Player";
+            document.getElementById('editM_id').value = m.id;
+            document.getElementById('mName').value = m.name;
+            document.getElementById('mRole').value = m.role;
+            document.getElementById('mId').value = m.gameId;
+            document.getElementById('mDev').value = m.device;
+            document.getElementById('mImg').value = m.img;
+            document.getElementById('mFb').value = m.fb;
+            document.getElementById('mCancel').classList.remove('hidden');
+        }
+
+        function resetM() {
+            document.getElementById('mForm').reset();
+            document.getElementById('editM_id').value = "";
+            document.getElementById('mTitle').innerText = "Add Player";
+            document.getElementById('mCancel').classList.add('hidden');
+        }
+
+        function editT(t) {
+            document.getElementById('tTitle').innerText = "Edit Event";
+            document.getElementById('editT_id').value = t.id;
+            document.getElementById('tName').value = t.name;
+            document.getElementById('tPrize').value = t.prize;
+            document.getElementById('tStatus').value = t.status;
+            document.getElementById('tImg').value = t.img;
+            document.getElementById('tLink').value = t.link;
+            document.getElementById('tCancel').classList.remove('hidden');
+        }
+
+        function resetT() {
+            document.getElementById('tForm').reset();
+            document.getElementById('editT_id').value = "";
+            document.getElementById('tTitle').innerText = "Post Event";
+            document.getElementById('tCancel').classList.add('hidden');
+        }
+    </script>
+</body>
+</html>
